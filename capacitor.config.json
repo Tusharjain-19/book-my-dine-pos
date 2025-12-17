@@ -1,6 +1,1 @@
-{
-  "appId": "com.example.app",
-  "appName": "My AI App",
-  "webDir": "www",
-  "bundledWebRuntime": false
-}
+{"appId":"com.example.app","appName":"POS","webDir":"www","bundledWebRuntime":false}
