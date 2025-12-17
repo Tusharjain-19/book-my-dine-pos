@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BookMyDine POS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app-frame">
+    
+    <div class="header no-print">
+        <div style="width:40px;">
+            <button id="nav-back" class="header-btn invisible" onclick="app.back()">&#8592;</button>
+        </div>
+        <div class="header-logo-container">
+            <img src="logo_withoutbackground.png" alt="BookMyDine" class="header-logo">
+        </div>
+        <div style="width:40px;">
+            <button id="nav-logout" class="header-btn invisible" onclick="app.logout()">&#10005;</button>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <div id="screen-login" class="screen active">
+            <div class="login-container">
+                <img src="logo_withoutbackground.png" class="login-logo">
+                <h3 style="margin-bottom:20px;">Staff Access</h3>
+                <input type="text" id="login-id" class="input-box" placeholder="Staff ID (e.g. W01)">
+                <input type="password" id="login-pass" class="input-box" placeholder="Password (e.g. 1234)">
+                <button class="btn" onclick="app.login()">Login</button>
+                <button class="btn secondary" onclick="app.login(true)">Offline Mode</button>
+                <p class="status-text" id="server-status">Connecting to Server...</p>
+            </div>
+        </div>
+
+        <div id="screen-tables" class="screen">
+            <div class="info-bar">
+                <span id="staff-display">Staff: --</span>
+                <span id="sync-status" class="online">● Online</span>
+            </div>
+            <h3 style="margin-bottom:15px; font-weight:800;">Select Table</h3>
+            <div id="tables-container" class="grid"></div>
+        </div>
+
+        <div id="screen-menu" class="screen">
+            <div class="menu-header">
+                <span id="menu-table-title">Table #</span>
+                <span id="menu-cart-total" style="color:var(--primary)">₹0</span>
+            </div>
+
+            <div id="menu-container" class="menu-list"></div>
+        </div>
+
+        <div id="screen-review" class="screen">
+            <h3 style="margin-bottom:15px;">Order Summary</h3>
+            <div id="review-items"></div>
+            
+            <div class="discount-box" style="margin-top:20px;">
+                <span style="font-weight:600; font-size:14px;">Discount (%)</span>
+                <input type="number" id="discount-val" class="input-box small" placeholder="0" oninput="app.calcTotals()">
+            </div>
+
+            <div class="summary">
+                <div class="row"><span>Subtotal</span><span id="summ-sub">₹0</span></div>
+                <div class="row"><span>Discount</span><span id="summ-disc" class="red-text">-₹0</span></div>
+                <div class="row"><span>Tax (5%)</span><span id="summ-tax">₹0</span></div>
+                <div class="total-row"><span>Grand Total</span><span id="summ-total">₹0</span></div>
+            </div>
+        </div>
+
+        <div id="screen-payment" class="screen">
+            <h3 style="text-align:center;">Select Payment Mode</h3>
+            <div class="payment-summary">
+                <span style="color:#666; font-size:13px; text-transform:uppercase; letter-spacing:1px;">Total Payable</span>
+                <h1 id="pay-amount" style="margin:5px 0 0; color:var(--primary);">₹0</h1>
+            </div>
+            <button class="btn outline" onclick="app.setPayment('UPI')">UPI / QR Code</button>
+            <button class="btn outline" onclick="app.setPayment('CARD')">Card Machine</button>
+            <button class="btn outline" onclick="app.setPayment('CASH')">Cash</button>
+        </div>
+
+        <div id="screen-action" class="screen">
+            <div id="action-upi" class="hidden text-center">
+                <h3>Scan to Pay</h3>
+                <div class="qr-box">
+                    <canvas id="qr-code"></canvas>
+                </div>
+                <div class="big-amount">Amount: <span id="qr-amount-text">₹0</span></div>
+            </div>
+            <div id="action-cash" class="hidden">
+                <h3>Cash Payment</h3>
+                <div class="payment-summary" style="margin:20px 0;">
+                    <span style="color:#666">Bill Amount</span>
+                    <div class="big-amount" id="cash-bill-amt">₹0</div>
+                </div>
+                <label style="font-weight:600; font-size:14px; margin-bottom:8px; display:block;">Cash Received</label>
+                <input type="number" id="cash-in" class="input-box" placeholder="Enter Amount" oninput="app.calcChange()">
+                <div class="change-display">Change: <span id="cash-change">₹0</span></div>
+            </div>
+            <div id="action-card" class="hidden text-center">
+                <div class="card-icon">💳</div>
+                <h3>Card Payment</h3>
+                <p>Process payment on the terminal</p>
+                <h2 id="card-amount-text" style="font-size:30px; margin-top:10px;">₹0</h2>
+            </div>
+            
+            <div style="margin-top:30px;">
+                <button class="btn" onclick="app.confirmPay()">Mark as Paid</button>
+                <button class="btn secondary" onclick="app.nav('screen-payment')">Back</button>
+            </div>
+        </div>
+
+        <div id="screen-bill" class="screen">
+            <div id="receipt-view" class="receipt"></div>
+            <div class="no-print">
+                <button class="btn" onclick="window.print()">Print Receipt</button>
+                <button class="btn outline" onclick="app.openShare()">Send PDF & WhatsApp</button>
+                <button class="btn secondary" onclick="app.resetOrder()">Home / New Order</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="app-footer" class="footer hidden"></div>
+
+    <div id="modal-share" class="modal-overlay">
+        <div class="modal-box">
+            <div id="share-form">
+                <h3 style="margin-top:0;">Customer Details</h3>
+                <input type="text" id="share-name" class="input-box" placeholder="Customer Name">
+                <input type="tel" id="share-mobile" class="input-box" placeholder="WhatsApp Number">
+                <input type="email" id="share-email" class="input-box" placeholder="Email ID (Optional)">
+                <button class="btn" onclick="app.sendShare(this)">Send Bill</button>
+                <button class="btn secondary" onclick="document.getElementById('modal-share').style.display='none'">Cancel</button>
+            </div>
+
+            <div id="share-success" class="hidden text-center">
+                <img src="success.png" alt="Success" style="width: 60px; margin-bottom: 15px;" onerror="this.src='https://cdn-icons-png.flaticon.com/512/190/190411.png'">
+                <h2 style="color: var(--primary);">Success!</h2>
+                <p>Bill Sent Successfully</p>
+                <div style="margin-top: 20px;">
+                    <button class="btn" onclick="app.printSuccess()">Print Bill</button>
+                    <button class="btn secondary" onclick="location.reload()">Home / New Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
